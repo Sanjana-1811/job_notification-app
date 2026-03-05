@@ -24,7 +24,7 @@ const Navigation: React.FC = () => {
         <div className="navbar-content">
           <div className="navbar-brand">
             <NavLink to="/" className="brand-link">
-              JN
+              Job Notification
             </NavLink>
           </div>
 
