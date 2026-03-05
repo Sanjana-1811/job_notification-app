@@ -1,5 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navigation from './components/Layout/Navigation';
+import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import Saved from './pages/Saved';
@@ -16,7 +17,7 @@ function App() {
         <Navigation />
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Landing />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/saved" element={<Saved />} />
