@@ -1,0 +1,115 @@
+.navbar {
+    background-color: var(--color-bg);
+    border-bottom: var(--border-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-container {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 var(--space-2);
+}
+
+.navbar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: var(--space-5);
+}
+
+.brand-link {
+    font-family: var(--font-family-serif);
+    font-size: var(--font-size-heading-lg);
+    font-weight: 500;
+    color: var(--color-accent);
+}
+
+.desktop-menu {
+    display: none;
+}
+
+.nav-link {
+    font-size: var(--font-size-body);
+    color: var(--color-text);
+    padding: var(--space-1) 0;
+    margin-left: var(--space-3);
+    position: relative;
+    transition: color var(--transition-fast);
+}
+
+.nav-link:hover {
+    color: var(--color-accent);
+}
+
+.nav-link.active {
+    color: var(--color-accent);
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--color-accent);
+}
+
+.mobile-menu-btn {
+    display: flex;
+    align-items: center;
+}
+
+.menu-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--space-1);
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-menu {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-bg);
+    border-bottom: var(--border-subtle);
+    padding: var(--space-2);
+}
+
+.mobile-link {
+    font-size: var(--font-size-body-lg);
+    color: var(--color-text);
+    padding: var(--space-2) 0;
+    border-bottom: var(--border-subtle);
+}
+
+.mobile-link:last-child {
+    border-bottom: none;
+}
+
+.mobile-link.active {
+    color: var(--color-accent);
+    font-weight: 500;
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+    .desktop-menu {
+        display: flex;
+        align-items: center;
+    }
+
+    .mobile-menu-btn {
+        display: none;
+    }
+
+    .mobile-menu {
+        display: none;
+    }
+}
