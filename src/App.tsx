@@ -7,6 +7,8 @@ import Saved from './pages/Saved';
 import Digest from './pages/Digest';
 import Proof from './pages/Proof';
 import NotFound from './pages/NotFound';
+import TestChecklist from './pages/TestChecklist';
+import ShipLock from './pages/ShipLock';
 import { ToastProvider } from './context/ToastContext';
 import './index.css';
 import './App.css';
@@ -30,6 +32,10 @@ function App() {
 
               {/* Artifacts / Proof */}
               <Route path="/proof" element={<Proof />} />
+
+              {/* Diagnostic Tracking / Shipment */}
+              <Route path="/jt/07-test" element={<TestChecklist />} />
+              <Route path="/jt/08-ship" element={<ShipLock />} />
 
               {/* 404 Fallback */}
               <Route path="*" element={<NotFound />} />
