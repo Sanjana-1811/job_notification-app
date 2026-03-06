@@ -4,11 +4,26 @@ import type { Job } from '../../data/jobs';
 interface JobCardProps {
     job: Job;
     isSaved?: boolean;
+    matchScore?: number;
     onSaveToggle: (jobId: string) => void;
     onViewDetails: (job: Job) => void;
 }
 
-const JobCard: React.FC<JobCardProps> = ({ job, isSaved = false, onSaveToggle, onViewDetails }) => {
+const getScoreColor = (score: number) => {
+    if (score >= 80) return 'var(--color-success)'; // Assume we need to add this or use a green hex, let's use explicit colors:
+    if (score >= 60) return '#D97706'; // Amber
+    if (score >= 40) return 'var(--color-text)'; // Neutral
+    return 'rgba(17,17,17,0.4)'; // Subtle grey
+};
+
+const getScoreBackground = (score: number) => {
+    if (score >= 80) return 'rgba(16, 185, 129, 0.1)'; // Light Green
+    if (score >= 60) return 'rgba(217, 119, 6, 0.1)'; // Light Amber
+    if (score >= 40) return 'rgba(17,17,17,0.05)'; // Light Neutral
+    return 'rgba(17,17,17,0.02)'; // Lighter grey
+};
+
+const JobCard: React.FC<JobCardProps> = ({ job, isSaved = false, matchScore, onSaveToggle, onViewDetails }) => {
     return (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -20,14 +35,32 @@ const JobCard: React.FC<JobCardProps> = ({ job, isSaved = false, onSaveToggle, o
                         {job.company}
                     </div>
                 </div>
-                <div style={{
-                    background: 'rgba(17,17,17,0.05)',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    fontWeight: 500
-                }}>
-                    {job.source}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {matchScore !== undefined && (
+                        <div style={{
+                            background: getScoreBackground(matchScore),
+                            color: getScoreColor(matchScore),
+                            border: `1px solid ${getScoreColor(matchScore)}`,
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                        }}>
+                            ✨ {matchScore}% Match
+                        </div>
+                    )}
+                    <div style={{
+                        background: 'rgba(17,17,17,0.05)',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontWeight: 500
+                    }}>
+                        {job.source}
+                    </div>
                 </div>
             </div>
 

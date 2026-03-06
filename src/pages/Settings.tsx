@@ -1,8 +1,65 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import type { UserPreferences } from '../utils/scoring';
+
+const LOCATION_OPTIONS = [
+    "Bengaluru", "Mumbai", "Pune", "Hyderabad", "Chennai", "Gurugram", "Noida", "Delhi NCR", "Remote"
+];
 
 const Settings: React.FC = () => {
+    const [preferences, setPreferences] = useState<UserPreferences>({
+        roleKeywords: [],
+        preferredLocations: [],
+        preferredMode: [],
+        experienceLevel: '',
+        skills: [],
+        minMatchScore: 40
+    });
+
+    const [savedMessage, setSavedMessage] = useState('');
+
+    useEffect(() => {
+        const saved = localStorage.getItem('jobTrackerPreferences');
+        if (saved) {
+            try {
+                setPreferences(JSON.parse(saved));
+            } catch (e) {
+                console.error('Failed to parse preferences', e);
+            }
+        }
+    }, []);
+
+    const handleSave = () => {
+        localStorage.setItem('jobTrackerPreferences', JSON.stringify(preferences));
+        setSavedMessage('Preferences saved successfully!');
+        setTimeout(() => setSavedMessage(''), 3000);
+    };
+
+    const handleKeywordsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPreferences(prev => ({ ...prev, roleKeywords: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }));
+    };
+
+    const handleSkillsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPreferences(prev => ({ ...prev, skills: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }));
+    };
+
+    const handleLocationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selected = Array.from(e.target.selectedOptions, option => option.value);
+        setPreferences(prev => ({ ...prev, preferredLocations: selected }));
+    };
+
+    const handleModeToggle = (mode: 'Remote' | 'Hybrid' | 'Onsite') => {
+        setPreferences(prev => {
+            const includes = prev.preferredMode.includes(mode);
+            if (includes) {
+                return { ...prev, preferredMode: prev.preferredMode.filter(m => m !== mode) };
+            } else {
+                return { ...prev, preferredMode: [...prev.preferredMode, mode] };
+            }
+        });
+    };
+
     return (
-        <div className="placeholder-page">
+        <div className="placeholder-page" style={{ paddingTop: 'var(--space-3)' }}>
             <h1 className="placeholder-title">Tracking Preferences</h1>
             <p className="placeholder-subtitle" style={{ marginBottom: 'var(--space-4)' }}>
                 Define your criteria. We'll find only the jobs that match.
@@ -14,12 +71,30 @@ const Settings: React.FC = () => {
                         <label className="field-group__label" htmlFor="keywords">
                             Role keywords
                         </label>
-                        <span className="field-group__hint">e.g. Frontend Engineer, React</span>
+                        <span className="field-group__hint">Comma-separated</span>
                     </div>
                     <input
                         id="keywords"
                         className="input"
-                        placeholder="Enter job titles or required skills"
+                        placeholder="e.g. Frontend Engineer, React"
+                        value={preferences.roleKeywords.join(', ')}
+                        onChange={handleKeywordsChange}
+                    />
+                </div>
+
+                <div className="field-group">
+                    <div className="field-group__label-row">
+                        <label className="field-group__label" htmlFor="skills">
+                            Skills
+                        </label>
+                        <span className="field-group__hint">Comma-separated</span>
+                    </div>
+                    <input
+                        id="skills"
+                        className="input"
+                        placeholder="e.g. JavaScript, CSS, HTML"
+                        value={preferences.skills.join(', ')}
+                        onChange={handleSkillsChange}
                     />
                 </div>
 
@@ -28,13 +103,20 @@ const Settings: React.FC = () => {
                         <label className="field-group__label" htmlFor="locations">
                             Preferred locations
                         </label>
-                        <span className="field-group__hint">e.g. New York, London, Remote</span>
+                        <span className="field-group__hint">Hold Ctrl/Cmd to select multiple</span>
                     </div>
-                    <input
+                    <select
                         id="locations"
-                        className="input"
-                        placeholder="Where do you want to work?"
-                    />
+                        multiple
+                        className="input input--multiline"
+                        style={{ minHeight: '120px' }}
+                        value={preferences.preferredLocations}
+                        onChange={handleLocationChange}
+                    >
+                        {LOCATION_OPTIONS.map(loc => (
+                            <option key={loc} value={loc}>{loc}</option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="field-group">
@@ -42,27 +124,66 @@ const Settings: React.FC = () => {
                         <div className="field-group__label">Work mode</div>
                     </div>
                     <div className="button-row">
-                        <button className="button button--secondary" type="button">Remote</button>
-                        <button className="button button--secondary" type="button">Hybrid</button>
-                        <button className="button button--secondary" type="button">Onsite</button>
+                        {['Remote', 'Hybrid', 'Onsite'].map(m => {
+                            const mode = m as 'Remote' | 'Hybrid' | 'Onsite';
+                            const isActive = preferences.preferredMode.includes(mode);
+                            return (
+                                <button
+                                    key={mode}
+                                    className={`button ${isActive ? 'button--primary' : 'button--secondary'}`}
+                                    type="button"
+                                    onClick={() => handleModeToggle(mode)}
+                                >
+                                    {mode}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
                 <div className="field-group">
                     <div className="field-group__label-row">
-                        <div className="field-group__label">Experience level</div>
+                        <label className="field-group__label" htmlFor="experience">Experience level</label>
                     </div>
-                    <select className="input" style={{ appearance: 'auto' }}>
-                        <option>Select level...</option>
-                        <option>Entry-level / Junior</option>
-                        <option>Mid-level</option>
-                        <option>Senior</option>
-                        <option>Staff / Principal</option>
+                    <select
+                        id="experience"
+                        className="input"
+                        style={{ appearance: 'auto' }}
+                        value={preferences.experienceLevel}
+                        onChange={(e) => setPreferences(prev => ({ ...prev, experienceLevel: e.target.value }))}
+                    >
+                        <option value="">Any</option>
+                        <option value="Fresher">Fresher</option>
+                        <option value="0-1">0-1 Years</option>
+                        <option value="1-3">1-3 Years</option>
+                        <option value="3-5">3-5 Years</option>
                     </select>
                 </div>
 
-                <div style={{ marginTop: 'var(--space-2)' }}>
-                    <button className="button button--primary" type="button">Save Preferences</button>
+                <div className="field-group">
+                    <div className="field-group__label-row">
+                        <label className="field-group__label" htmlFor="score">
+                            Minimum Match Score Threshold ({preferences.minMatchScore})
+                        </label>
+                        <span className="field-group__hint">0 - 100</span>
+                    </div>
+                    <input
+                        type="range"
+                        id="score"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={preferences.minMatchScore}
+                        onChange={(e) => setPreferences(prev => ({ ...prev, minMatchScore: parseInt(e.target.value, 10) }))}
+                        style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--color-accent)' }}
+                    />
+                </div>
+
+                <div style={{ marginTop: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    <button className="button button--primary" type="button" onClick={handleSave}>
+                        Save Preferences
+                    </button>
+                    {savedMessage && <span style={{ color: 'var(--color-success)', fontSize: '14px', fontWeight: 500 }}>{savedMessage}</span>}
                 </div>
             </div>
         </div>

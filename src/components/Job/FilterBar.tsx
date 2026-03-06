@@ -6,7 +6,8 @@ export interface FilterState {
     mode: string;
     experience: string;
     source: string;
-    sort: 'Latest' | 'Oldest';
+    sort: 'Latest' | 'Oldest' | 'Match Score' | 'Salary';
+    showOnlyMatches: boolean;
 }
 
 interface FilterBarProps {
@@ -16,8 +17,9 @@ interface FilterBarProps {
 
 const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        onFilterChange({ ...filters, [name]: value });
+        const target = e.target as HTMLInputElement;
+        const value = target.type === 'checkbox' ? target.checked : target.value;
+        onFilterChange({ ...filters, [target.name]: value });
     };
 
     return (
@@ -106,8 +108,34 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
                 >
                     <option value="Latest">Latest</option>
                     <option value="Oldest">Oldest</option>
+                    <option value="Match Score">Match Score</option>
+                    <option value="Salary">Salary (High to Low)</option>
                 </select>
 
+            </div>
+
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                paddingTop: 'var(--space-2)',
+                borderTop: 'var(--border-subtle)'
+            }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}>
+                    <input
+                        type="checkbox"
+                        name="showOnlyMatches"
+                        checked={filters.showOnlyMatches}
+                        onChange={handleChange}
+                        style={{
+                            width: '18px',
+                            height: '18px',
+                            accentColor: 'var(--color-accent)',
+                            cursor: 'pointer'
+                        }}
+                    />
+                    Show only jobs above my threshold
+                </label>
             </div>
         </div>
     );

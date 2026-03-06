@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { jobsData } from '../data/jobs';
 import type { Job } from '../data/jobs';
 import JobCard from '../components/Job/JobCard';
 import JobModal from '../components/Job/JobModal';
 import FilterBar from '../components/Job/FilterBar';
 import type { FilterState } from '../components/Job/FilterBar';
+import { calculateMatchScore, extractMaxSalary } from '../utils/scoring';
+import type { UserPreferences } from '../utils/scoring';
 
 const Dashboard: React.FC = () => {
     const [filters, setFilters] = useState<FilterState>({
@@ -14,10 +16,12 @@ const Dashboard: React.FC = () => {
         experience: '',
         source: '',
         sort: 'Latest', // Default sort
+        showOnlyMatches: false,
     });
 
     const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+    const [preferences, setPreferences] = useState<UserPreferences | null>(null);
 
     useEffect(() => {
         const saved = localStorage.getItem('savedJobs');
@@ -26,6 +30,15 @@ const Dashboard: React.FC = () => {
                 setSavedJobIds(JSON.parse(saved));
             } catch (e) {
                 console.error('Failed to parse saved jobs', e);
+            }
+        }
+
+        const storedPrefs = localStorage.getItem('jobTrackerPreferences');
+        if (storedPrefs) {
+            try {
+                setPreferences(JSON.parse(storedPrefs));
+            } catch (e) {
+                console.error('Failed to parse preferences', e);
             }
         }
     }, []);
@@ -47,30 +60,61 @@ const Dashboard: React.FC = () => {
         setSelectedJob(job);
     };
 
-    const filteredJobs = jobsData.filter(job => {
-        const keywordMatch = !filters.keyword ||
-            job.title.toLowerCase().includes(filters.keyword.toLowerCase()) ||
-            job.company.toLowerCase().includes(filters.keyword.toLowerCase());
+    const processedJobs = useMemo(() => {
+        return jobsData.map(job => ({
+            ...job,
+            matchScore: calculateMatchScore(job, preferences)
+        }));
+    }, [preferences]);
 
-        const locationMatch = !filters.location || job.location === filters.location;
-        const modeMatch = !filters.mode || job.mode === filters.mode;
-        const expMatch = !filters.experience || job.experience === filters.experience;
-        const sourceMatch = !filters.source || job.source === filters.source;
+    const filteredJobs = useMemo(() => {
+        return processedJobs.filter(job => {
+            const keywordMatch = !filters.keyword ||
+                job.title.toLowerCase().includes(filters.keyword.toLowerCase()) ||
+                job.company.toLowerCase().includes(filters.keyword.toLowerCase());
 
-        return keywordMatch && locationMatch && modeMatch && expMatch && sourceMatch;
-    });
+            const locationMatch = !filters.location || job.location === filters.location;
+            const modeMatch = !filters.mode || job.mode === filters.mode;
+            const expMatch = !filters.experience || job.experience === filters.experience;
+            const sourceMatch = !filters.source || job.source === filters.source;
 
-    const sortedJobs = [...filteredJobs].sort((a, b) => {
-        if (filters.sort === 'Latest') {
-            return a.postedDaysAgo - b.postedDaysAgo;
-        } else {
-            return b.postedDaysAgo - a.postedDaysAgo;
-        }
-    });
+            const thresholdMatch = !filters.showOnlyMatches || (preferences && job.matchScore >= preferences.minMatchScore);
+
+            return keywordMatch && locationMatch && modeMatch && expMatch && sourceMatch && thresholdMatch;
+        });
+    }, [processedJobs, filters, preferences]);
+
+    const sortedJobs = useMemo(() => {
+        return [...filteredJobs].sort((a, b) => {
+            if (filters.sort === 'Match Score') {
+                return b.matchScore - a.matchScore;
+            } else if (filters.sort === 'Salary') {
+                return extractMaxSalary(b.salaryRange) - extractMaxSalary(a.salaryRange);
+            } else if (filters.sort === 'Latest') {
+                return a.postedDaysAgo - b.postedDaysAgo;
+            } else {
+                return b.postedDaysAgo - a.postedDaysAgo;
+            }
+        });
+    }, [filteredJobs, filters.sort]);
 
     return (
         <div style={{ paddingBottom: 'var(--space-5)' }}>
             <h1 className="placeholder-title" style={{ marginTop: 'var(--space-2)' }}>Dashboard</h1>
+
+            {!preferences && (
+                <div style={{
+                    background: 'rgba(139, 0, 0, 0.05)',
+                    color: 'var(--color-accent)',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(139, 0, 0, 0.1)',
+                    marginBottom: 'var(--space-3)',
+                    fontWeight: 500
+                }}>
+                    💡 Set your preferences to activate intelligent matching.
+                </div>
+            )}
 
             <FilterBar filters={filters} onFilterChange={setFilters} />
 
@@ -87,6 +131,7 @@ const Dashboard: React.FC = () => {
                             key={job.id}
                             job={job}
                             isSaved={savedJobIds.includes(job.id)}
+                            matchScore={preferences ? job.matchScore : undefined}
                             onSaveToggle={handleSaveToggle}
                             onViewDetails={handleViewDetails}
                         />
@@ -94,14 +139,14 @@ const Dashboard: React.FC = () => {
                 </div>
             ) : (
                 <div className="empty-state" style={{ marginTop: 'var(--space-3)', alignItems: 'center', textAlign: 'center', padding: 'var(--space-5) var(--space-3)' }}>
-                    <h2 className="empty-state__title" style={{ fontSize: 'var(--font-size-heading-lg)' }}>No jobs match your search.</h2>
+                    <h2 className="empty-state__title" style={{ fontSize: 'var(--font-size-heading-lg)' }}>No roles match your criteria.</h2>
                     <p className="empty-state__body">
-                        Try adjusting your filters or search keywords.
+                        Adjust filters or lower threshold.
                     </p>
                     <button
                         className="button button--secondary"
                         style={{ marginTop: 'var(--space-2)' }}
-                        onClick={() => setFilters({ keyword: '', location: '', mode: '', experience: '', source: '', sort: 'Latest' })}
+                        onClick={() => setFilters({ keyword: '', location: '', mode: '', experience: '', source: '', sort: 'Latest', showOnlyMatches: false })}
                     >
                         Clear Filters
                     </button>
