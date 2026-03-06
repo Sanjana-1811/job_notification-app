@@ -15,13 +15,18 @@ const Settings: React.FC = () => {
         minMatchScore: 40
     });
 
+    const [localKeywords, setLocalKeywords] = useState('');
+    const [localSkills, setLocalSkills] = useState('');
     const [savedMessage, setSavedMessage] = useState('');
 
     useEffect(() => {
         const saved = localStorage.getItem('jobTrackerPreferences');
         if (saved) {
             try {
-                setPreferences(JSON.parse(saved));
+                const parsed = JSON.parse(saved) as UserPreferences;
+                setPreferences(parsed);
+                setLocalKeywords(parsed.roleKeywords.join(', '));
+                setLocalSkills(parsed.skills.join(', '));
             } catch (e) {
                 console.error('Failed to parse preferences', e);
             }
@@ -29,17 +34,24 @@ const Settings: React.FC = () => {
     }, []);
 
     const handleSave = () => {
-        localStorage.setItem('jobTrackerPreferences', JSON.stringify(preferences));
+        const updatedPreferences = {
+            ...preferences,
+            roleKeywords: localKeywords.split(',').map(s => s.trim()).filter(Boolean),
+            skills: localSkills.split(',').map(s => s.trim()).filter(Boolean)
+        };
+
+        setPreferences(updatedPreferences);
+        localStorage.setItem('jobTrackerPreferences', JSON.stringify(updatedPreferences));
         setSavedMessage('Preferences saved successfully!');
         setTimeout(() => setSavedMessage(''), 3000);
     };
 
     const handleKeywordsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setPreferences(prev => ({ ...prev, roleKeywords: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }));
+        setLocalKeywords(e.target.value);
     };
 
     const handleSkillsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setPreferences(prev => ({ ...prev, skills: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }));
+        setLocalSkills(e.target.value);
     };
 
     const handleLocationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -67,7 +79,7 @@ const Settings: React.FC = () => {
 
             <div className="card card--workspace">
                 <div className="field-group">
-                    <div className="field-group__label-row">
+                    <div className="field-group__label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
                         <label className="field-group__label" htmlFor="keywords">
                             Role keywords
                         </label>
@@ -77,13 +89,13 @@ const Settings: React.FC = () => {
                         id="keywords"
                         className="input"
                         placeholder="e.g. Frontend Engineer, React"
-                        value={preferences.roleKeywords.join(', ')}
+                        value={localKeywords}
                         onChange={handleKeywordsChange}
                     />
                 </div>
 
                 <div className="field-group">
-                    <div className="field-group__label-row">
+                    <div className="field-group__label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
                         <label className="field-group__label" htmlFor="skills">
                             Skills
                         </label>
@@ -93,13 +105,13 @@ const Settings: React.FC = () => {
                         id="skills"
                         className="input"
                         placeholder="e.g. JavaScript, CSS, HTML"
-                        value={preferences.skills.join(', ')}
+                        value={localSkills}
                         onChange={handleSkillsChange}
                     />
                 </div>
 
                 <div className="field-group">
-                    <div className="field-group__label-row">
+                    <div className="field-group__label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
                         <label className="field-group__label" htmlFor="locations">
                             Preferred locations
                         </label>
@@ -120,7 +132,7 @@ const Settings: React.FC = () => {
                 </div>
 
                 <div className="field-group">
-                    <div className="field-group__label-row">
+                    <div className="field-group__label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
                         <div className="field-group__label">Work mode</div>
                     </div>
                     <div className="button-row">
@@ -142,7 +154,7 @@ const Settings: React.FC = () => {
                 </div>
 
                 <div className="field-group">
-                    <div className="field-group__label-row">
+                    <div className="field-group__label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
                         <label className="field-group__label" htmlFor="experience">Experience level</label>
                     </div>
                     <select
@@ -161,7 +173,7 @@ const Settings: React.FC = () => {
                 </div>
 
                 <div className="field-group">
-                    <div className="field-group__label-row">
+                    <div className="field-group__label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
                         <label className="field-group__label" htmlFor="score">
                             Minimum Match Score Threshold ({preferences.minMatchScore})
                         </label>
