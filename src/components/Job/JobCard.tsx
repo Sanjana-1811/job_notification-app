@@ -1,12 +1,15 @@
 import React from 'react';
 import type { Job } from '../../data/jobs';
+import type { JobStatusType } from '../../hooks/useJobStatus';
 
 interface JobCardProps {
     job: Job;
     isSaved?: boolean;
     matchScore?: number;
+    status?: JobStatusType;
     onSaveToggle: (jobId: string) => void;
     onViewDetails: (job: Job) => void;
+    onStatusChange?: (jobId: string, status: JobStatusType) => void;
 }
 
 const getScoreColor = (score: number) => {
@@ -23,7 +26,25 @@ const getScoreBackground = (score: number) => {
     return 'rgba(17,17,17,0.02)'; // Lighter grey
 };
 
-const JobCard: React.FC<JobCardProps> = ({ job, isSaved = false, matchScore, onSaveToggle, onViewDetails }) => {
+const getStatusColor = (status: JobStatusType) => {
+    switch (status) {
+        case 'Applied': return '#2563EB'; // Blue
+        case 'Rejected': return 'var(--color-accent)'; // Red
+        case 'Selected': return 'var(--color-success)'; // Green
+        default: return 'var(--color-text)'; // Neutral
+    }
+};
+
+const getStatusBackground = (status: JobStatusType) => {
+    switch (status) {
+        case 'Applied': return 'rgba(37, 99, 235, 0.1)';
+        case 'Rejected': return 'rgba(139, 0, 0, 0.1)';
+        case 'Selected': return 'rgba(47, 107, 79, 0.1)';
+        default: return 'rgba(17,17,17,0.05)';
+    }
+};
+
+const JobCard: React.FC<JobCardProps> = ({ job, isSaved = false, matchScore, status = 'Not Applied', onSaveToggle, onViewDetails, onStatusChange }) => {
     return (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -76,8 +97,32 @@ const JobCard: React.FC<JobCardProps> = ({ job, isSaved = false, matchScore, onS
                 </div>
             </div>
 
-            <div style={{ fontSize: '13px', color: 'rgba(17,17,17,0.5)', marginTop: 'var(--space-1)' }}>
-                Posted {job.postedDaysAgo === 0 ? 'Today' : `${job.postedDaysAgo} days ago`}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-1)' }}>
+                <div style={{ fontSize: '13px', color: 'rgba(17,17,17,0.5)' }}>
+                    Posted {job.postedDaysAgo === 0 ? 'Today' : `${job.postedDaysAgo} days ago`}
+                </div>
+                {onStatusChange && (
+                    <select
+                        value={status}
+                        onChange={(e) => onStatusChange(job.id, e.target.value as JobStatusType)}
+                        style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            color: getStatusColor(status),
+                            background: getStatusBackground(status),
+                            border: `1px solid ${getStatusColor(status)}`,
+                            appearance: 'auto'
+                        }}
+                    >
+                        <option value="Not Applied">Not Applied</option>
+                        <option value="Applied">Applied</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Selected">Selected</option>
+                    </select>
+                )}
             </div>
 
             <div className="button-row" style={{ marginTop: 'var(--space-2)' }}>

@@ -8,6 +8,7 @@ export interface FilterState {
     source: string;
     sort: 'Latest' | 'Oldest' | 'Match Score' | 'Salary';
     showOnlyMatches: boolean;
+    status: string;
 }
 
 interface FilterBarProps {
@@ -110,6 +111,21 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
                     <option value="Oldest">Oldest</option>
                     <option value="Match Score">Match Score</option>
                     <option value="Salary">Salary (High to Low)</option>
+                </select>
+
+                {/* Status */}
+                <select
+                    name="status"
+                    value={filters.status}
+                    onChange={handleChange}
+                    className="input"
+                    style={{ padding: '8px 12px', appearance: 'auto' }}
+                >
+                    <option value="All">All Statuses</option>
+                    <option value="Not Applied">Not Applied</option>
+                    <option value="Applied">Applied</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Selected">Selected</option>
                 </select>
 
             </div>

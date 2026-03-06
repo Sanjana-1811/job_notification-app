@@ -4,6 +4,17 @@ import type { Job } from '../data/jobs';
 import { calculateMatchScore } from '../utils/scoring';
 import type { UserPreferences } from '../utils/scoring';
 import { Copy, Mail } from 'lucide-react';
+import { useJobStatus } from '../hooks/useJobStatus';
+
+// Quick redefine for standalone Digest email styling:
+const getBadgeStyles = (status: string) => {
+    switch (status) {
+        case 'Applied': return { color: '#2563EB', background: 'rgba(37, 99, 235, 0.1)' };
+        case 'Rejected': return { color: 'var(--color-accent)', background: 'rgba(139, 0, 0, 0.1)' };
+        case 'Selected': return { color: 'var(--color-success)', background: 'rgba(47, 107, 79, 0.1)' };
+        default: return { color: 'var(--color-text)', background: 'rgba(17,17,17,0.05)' };
+    }
+};
 
 interface DigestJob extends Job {
     matchScore: number;
@@ -13,6 +24,22 @@ const Digest: React.FC = () => {
     const [preferences, setPreferences] = useState<UserPreferences | null>(null);
     const [digestJobs, setDigestJobs] = useState<DigestJob[] | null>(null);
     const [copySuccess, setCopySuccess] = useState(false);
+
+    const { statuses } = useJobStatus();
+
+    const recentUpdates = useMemo(() => {
+        return Object.entries(statuses)
+            .filter(([_, record]) => record.status !== 'Not Applied')
+            .map(([jobId, record]) => {
+                const job = jobsData.find(j => j.id === jobId);
+                return {
+                    ...record,
+                    job
+                };
+            })
+            .filter(update => update.job !== undefined)
+            .sort((a, b) => new Date(b.dateChanged).getTime() - new Date(a.dateChanged).getTime());
+    }, [statuses]);
 
     const todayStr = useMemo(() => {
         const d = new Date();
@@ -70,6 +97,17 @@ const Digest: React.FC = () => {
             text += `   📍 ${job.location} | 💼 Exp: ${job.experience}\n`;
             text += `   🔗 Apply: ${job.applyUrl}\n\n`;
         });
+
+        if (recentUpdates.length > 0) {
+            text += `\n--- Recent Status Updates ---\n`;
+            recentUpdates.forEach(update => {
+                if (update.job) {
+                    text += `${update.job.title} at ${update.job.company} -> [${update.status}]\n`;
+                }
+            });
+            text += `\n`;
+        }
+
         text += `This digest was generated based on your preferences.`;
         return text;
     };
@@ -226,6 +264,43 @@ const Digest: React.FC = () => {
                             </div>
                         ))}
                     </div>
+
+                    {/* Recent Status Updates */}
+                    {recentUpdates.length > 0 && (
+                        <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '2px solid rgba(17,17,17,0.05)', background: '#FAFAFA' }}>
+                            <h3 style={{ margin: '0 0 var(--space-2) 0', fontSize: '16px', fontFamily: 'var(--font-family-serif)', color: 'var(--color-text)' }}>
+                                Recent Status Updates
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {recentUpdates.map((update) => {
+                                    if (!update.job) return null;
+                                    const { color, background } = getBadgeStyles(update.status);
+                                    return (
+                                        <div key={update.job.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'white', borderRadius: '8px', border: '1px solid rgba(17,17,17,0.05)' }}>
+                                            <div>
+                                                <div style={{ fontSize: '14px', fontWeight: 600 }}>{update.job.title}</div>
+                                                <div style={{ fontSize: '13px', color: 'rgba(17,17,17,0.6)' }}>{update.job.company}</div>
+                                                <div style={{ fontSize: '11px', color: 'rgba(17,17,17,0.4)', marginTop: '4px' }}>
+                                                    {new Date(update.dateChanged).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                            <div style={{
+                                                background,
+                                                color,
+                                                border: `1px solid ${color}`,
+                                                padding: '4px 12px',
+                                                borderRadius: '999px',
+                                                fontSize: '12px',
+                                                fontWeight: 600
+                                            }}>
+                                                {update.status}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Email Footer & Actions */}
                     <div style={{

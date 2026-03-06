@@ -1,0 +1,69 @@
+# Job Status Tracking & Notifications Implementation Plan
+
+This plan details the technical steps to fulfill the Phase 4 requirements: persistent job status tracking, status filtering, simulated toast notifications, and digest page updates.
+
+## User Review Required
+
+Please review the proposed approach below. The plan strictly adheres to your non-negotiables: no route changes, no existing feature removal, localStorage persistence, and premium design system consistency.
+
+## Proposed Changes
+
+### Global State & Persistence
+We will introduce a simple global context for Toast notifications and a robust LocalStorage structure for Job Statuses.
+
+#### [NEW] `src/context/ToastContext.tsx`
+- Create a `ToastProvider` that wraps our application.
+- Expose an `addToast(message: string)` function.
+- Render non-blocking toasts in a fixed container (bottom-right or top-right) with premium styling and auto-dismissal.
+
+#### [NEW] `src/hooks/useJobStatus.ts`
+- Create a custom React hook to manage reading and writing from `localStorage` under the key `jobTrackerStatus`.
+- The data structure will be: `Record<string, { status: string, date: string }>` mapping `jobId` to a status object.
+- Provide a `updateJobStatus(jobId, newStatus)` function that triggers the contextual Toast on change.
+
+---
+
+### Components
+
+#### [MODIFY] [src/App.tsx](file:///c:/Users/sanja/Downloads/Kodnest_Projects/Job%20Notification%20Tracker/src/App.tsx)
+- Wrap the main application tree with the `ToastProvider` so notifications can be triggered from any route.
+
+#### [MODIFY] [src/components/Job/JobCard.tsx](file:///c:/Users/sanja/Downloads/Kodnest_Projects/Job%20Notification%20Tracker/src/components/Job/JobCard.tsx)
+- Add an interactive Status Button Group or Dropdown to select: "Not Applied", "Applied", "Rejected", "Selected".
+- Apply dynamic badge colors per the spec:
+  - Not Applied → neutral (grey)
+  - Applied → blue (`#2563EB` or similar muted premium blue)
+  - Rejected → red (`--color-accent` / deep red)
+  - Selected → green (`--color-success` / muted green)
+
+#### [MODIFY] [src/components/Job/FilterBar.tsx](file:///c:/Users/sanja/Downloads/Kodnest_Projects/Job%20Notification%20Tracker/src/components/Job/FilterBar.tsx)
+- Append a new `status` field to [FilterState](file:///c:/Users/sanja/Downloads/Kodnest_Projects/Job%20Notification%20Tracker/src/components/Job/FilterBar.tsx#3-12) ("All", "Not Applied", "Applied", "Rejected", "Selected").
+- Add the corresponding select element to the FilterBar UI.
+
+---
+
+### Pages
+
+#### [MODIFY] [src/pages/Dashboard.tsx](file:///c:/Users/sanja/Downloads/Kodnest_Projects/Job%20Notification%20Tracker/src/pages/Dashboard.tsx)
+- Integrate `useJobStatus` hook.
+- Update the job mapping to pass the current status to the [JobCard](file:///c:/Users/sanja/Downloads/Kodnest_Projects/Job%20Notification%20Tracker/src/components/Job/JobCard.tsx#26-108).
+- Update the filtering engine (AND logic) to check the target job's status against the [FilterState](file:///c:/Users/sanja/Downloads/Kodnest_Projects/Job%20Notification%20Tracker/src/components/Job/FilterBar.tsx#3-12). If no status exists in `localStorage`, it defaults to "Not Applied".
+
+#### [MODIFY] [src/pages/Saved.tsx](file:///c:/Users/sanja/Downloads/Kodnest_Projects/Job%20Notification%20Tracker/src/pages/Saved.tsx)
+- Integrate `useJobStatus` hook to render statuses properly on saved jobs.
+
+#### [MODIFY] [src/pages/Digest.tsx](file:///c:/Users/sanja/Downloads/Kodnest_Projects/Job%20Notification%20Tracker/src/pages/Digest.tsx)
+- Parse `jobTrackerStatus` from `localStorage` on load.
+- Filter out "Not Applied" to compile a list of active applications.
+- Build a new UI section under the email digest: "Recent Status Updates".
+- Match IDs with `jobsData` to display Title, Company, Status, and Date Changed.
+
+## Verification Plan
+
+### Manual Verification
+1. Navigate to `/dashboard` and view any Job Card. It should default to "Not Applied".
+2. Change the status of Job A to "Applied". A sleek Toast notification reading "Status updated: Applied" should appear and auto-dismiss.
+3. Refresh the page. Job A should still display "Applied" rendered in blue.
+4. Open the Filter Bar and select "Applied". The list should instantly filter down to show only Job A. Add a Keyword filter to ensure the AND logic still functions perfectly.
+5. Navigate to `/digest`. You should see Job A listed in the "Recent Status Updates" block at the bottom, alongside the current date.
+6. Clear LocalStorage and refresh. Confirm that no crashes occur and everything reverts safely to "Not Applied".

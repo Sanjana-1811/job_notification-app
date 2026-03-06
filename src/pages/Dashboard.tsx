@@ -7,6 +7,7 @@ import FilterBar from '../components/Job/FilterBar';
 import type { FilterState } from '../components/Job/FilterBar';
 import { calculateMatchScore, extractMaxSalary } from '../utils/scoring';
 import type { UserPreferences } from '../utils/scoring';
+import { useJobStatus } from '../hooks/useJobStatus';
 
 const Dashboard: React.FC = () => {
     const [filters, setFilters] = useState<FilterState>({
@@ -17,7 +18,10 @@ const Dashboard: React.FC = () => {
         source: '',
         sort: 'Latest', // Default sort
         showOnlyMatches: false,
+        status: 'All',
     });
+
+    const { getJobStatus, updateJobStatus } = useJobStatus();
 
     const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -77,12 +81,14 @@ const Dashboard: React.FC = () => {
             const modeMatch = !filters.mode || job.mode === filters.mode;
             const expMatch = !filters.experience || job.experience === filters.experience;
             const sourceMatch = !filters.source || job.source === filters.source;
-
             const thresholdMatch = !filters.showOnlyMatches || (preferences && job.matchScore >= preferences.minMatchScore);
 
-            return keywordMatch && locationMatch && modeMatch && expMatch && sourceMatch && thresholdMatch;
+            const jobStatus = getJobStatus(job.id);
+            const statusMatch = filters.status === 'All' || jobStatus === filters.status;
+
+            return keywordMatch && locationMatch && modeMatch && expMatch && sourceMatch && thresholdMatch && statusMatch;
         });
-    }, [processedJobs, filters, preferences]);
+    }, [processedJobs, filters, preferences, getJobStatus]);
 
     const sortedJobs = useMemo(() => {
         return [...filteredJobs].sort((a, b) => {
@@ -132,8 +138,10 @@ const Dashboard: React.FC = () => {
                             job={job}
                             isSaved={savedJobIds.includes(job.id)}
                             matchScore={preferences ? job.matchScore : undefined}
+                            status={getJobStatus(job.id)}
                             onSaveToggle={handleSaveToggle}
                             onViewDetails={handleViewDetails}
+                            onStatusChange={updateJobStatus}
                         />
                     ))}
                 </div>
@@ -146,7 +154,7 @@ const Dashboard: React.FC = () => {
                     <button
                         className="button button--secondary"
                         style={{ marginTop: 'var(--space-2)' }}
-                        onClick={() => setFilters({ keyword: '', location: '', mode: '', experience: '', source: '', sort: 'Latest', showOnlyMatches: false })}
+                        onClick={() => setFilters({ keyword: '', location: '', mode: '', experience: '', source: '', sort: 'Latest', showOnlyMatches: false, status: 'All' })}
                     >
                         Clear Filters
                     </button>

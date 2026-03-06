@@ -3,10 +3,12 @@ import { jobsData } from '../data/jobs';
 import type { Job } from '../data/jobs';
 import JobCard from '../components/Job/JobCard';
 import JobModal from '../components/Job/JobModal';
+import { useJobStatus } from '../hooks/useJobStatus';
 
 const Saved: React.FC = () => {
     const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+    const { getJobStatus, updateJobStatus } = useJobStatus();
 
     useEffect(() => {
         const saved = localStorage.getItem('savedJobs');
@@ -45,8 +47,10 @@ const Saved: React.FC = () => {
                             key={job.id}
                             job={job}
                             isSaved={true}
+                            status={getJobStatus(job.id)}
                             onSaveToggle={handleSaveToggle}
                             onViewDetails={setSelectedJob}
+                            onStatusChange={updateJobStatus}
                         />
                     ))}
                 </div>
